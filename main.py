@@ -1,2 +1,180 @@
+import csv
+import pwd
+import grp
+import os
+import getpass
+from datetime import date
 
-print("in main")
+
+class bcolors:
+    OK = '\033[35m'  # GREEN
+    WARNING = '\033[93m'  # YELLOW
+    FAIL = '\033[91m'  # RED
+    RESET = '\033[0m'  # RESET COLOR
+
+
+def myCMD(cmd):
+    print(f'\t ')
+    print(f"{bcolors.OK}About to run {cmd}")
+    os.system(cmd)
+    print(f"End of cmd {bcolors.RESET}")
+    print(f'\t ')
+
+
+def createDirectory(dir):
+    print(f'\t =======================================')
+    print(f'\t Checking ' + dir)
+
+    if os.path.isdir(dir) == True:
+        print(f'\t Directory already exsist')
+    else:
+        os.mkdir(dir)
+        uid = pwd.getpwnam(user).pw_uid
+        gid = grp.getgrnam(user).gr_gid
+        os.chown(dir, uid, gid)
+        print(f'\t Directory created')
+
+    print(f'\t =======================================')
+
+
+def checkIPs(fl):
+    print(f'\t =======================================')
+    print(f'\t Checking ' + fl)
+
+    if os.path.isfile(fl) == True:
+        print(f'\t IP file exsist')
+        count = len(open(fl).readlines())
+        print(f'\t lines = ' + str(count))
+    else:
+        # os.mkdir(dir)
+        print(f'\t not there')
+        open(fl, "w")
+        uid = pwd.getpwnam(user).pw_uid
+        gid = grp.getgrnam(user).gr_gid
+        os.chown(fl, uid, gid)
+        quit()
+
+    print(f'\t =======================================')
+
+
+def doNmapScan():
+    print(f'\t =======================================')
+    print(f'\t Start nmap scan')
+
+    working_directory = base_directory + 'enum/nmap/'
+    createDirectory(working_directory)
+    # nmap_command = 'sudo nmap -iL ' + ip_file + ' -sSVC -Pn -O -p- -v -T3 -oA ' + working_directory + client
+    nmap_command = 'sudo nmap -iL ' + ip_file + ' -sS -p 80,139,443,445 -T4 -oA ' + working_directory + client
+    print(f'\t nmap_command = ' + nmap_command)
+    os.system(nmap_command)
+
+    print(f'\t End nmap scan')
+    print(f'\t =======================================')
+
+
+def doEyewitness():
+    print(f'\t =======================================')
+    print(f'\t Start eyewitness')
+
+    print(f'\t End eyewitness')
+    print(f'\t =======================================')
+
+
+def doEnum4Linux():
+    print(f'\t =======================================')
+    print(f'\t Start enum4linux')
+
+    print(f'\t End enum4linux')
+    print(f'\t =======================================')
+
+
+def doNmapParse():
+    print(f'\t =======================================')
+    print(f'\t Start nmap parse')
+
+    dir = '/opt/tools/ultimate-nmap-parser/'
+    if os.path.isdir(dir) == True:
+        print(f'\t ultimate-nmap-parser already exsist in /opt/tools')
+    else:
+        myCMD('git clone https://github.com/Shifty0g/ultimate-nmap-parser/ /opt/tools/ultimate-nmap-parser')
+        myCMD('chmod +x /opt/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh')
+
+    working_directory = base_directory + 'enum/nmap/'
+    myCMD('sudo /opt/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh ' + working_directory + client + '.gnmap --all')
+
+    cwd = os.getcwd()
+    myCMD('sudo mv ' + cwd + '/parse/ ' + base_directory + 'enum/nmap/')
+    myCMD('chown ' + user + ' ' + base_directory + 'enum/nmap/parse/')
+    myCMD('chown ' + user + ' ' + base_directory + 'enum/nmap/parse/*.*')
+
+    print(f'\t End nmap parse')
+    print(f'\t =======================================')
+
+
+client = 'Internal'
+nmap_switches = '-sSVC -Pn -O  --top-ports 10  -v -T3'
+working_directory = ' '
+scan_directory = 'port-scan'
+namp_command = ' '
+customer = ' '
+IP = ' '
+mask = 32
+CIDR = ' '
+previousCustomer = ' '
+user = os.getlogin()
+year = date.today().year
+base_directory = '/home/' + user + '/client-data/' + str(year) + '/' + client + '/'
+ip_file = base_directory + 'ips.txt'
+
+# print(f'\t Checking ' + user)
+# print(f'\t Checking ' + os.getlogin() )
+# print(f'\t --- ' + base_directory)
+
+createDirectory(base_directory)
+checkIPs(ip_file)
+
+createDirectory(base_directory + 'enum/')
+
+doNmapScan()
+doNmapParse()
+doEyewitness()
+doEnum4Linux()
+
+quit()
+
+with open('pentest.csv') as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    line_count = 0
+    for row in csv_reader:
+        if line_count == 0:
+            print(f'Column names are {", ".join(row)}')
+            line_count += 1
+        else:
+            customer = row[0]
+            IP = row[1]
+            mask = row[2]
+            CIDR = IP + '/' + mask
+            working_directory = base_directory + customer
+
+            print(f"\n")
+            print(f"{bcolors.OK}Starting {customer} {IP} {bcolors.RESET}")
+            print(f"\t Working_directory = {working_directory}")
+
+            createDirectory(working_directory)
+            working_directory = working_directory + '/' + scan_directory
+            createDirectory(working_directory)
+
+            nmap_command = 'sudo nmap ' + CIDR + ' ' + nmap_switches + ' -oA ' + working_directory + '/' + row[1]
+            print(f"\t\t nmap_command = {nmap_command}")
+            os.system(nmap_command)
+            line_count += 1
+            print(f"{bcolors.OK}Ending {customer} {IP} {bcolors.RESET}")
+
+            if customer != previousCustomer:
+                print(f"{bcolors.OK}End of {customer} {IP} {bcolors.RESET}")
+                parse_command = 'sudo /home/kali/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh ' + working_directory + '/*.gnmap --csv'
+                os.system(parse_command)
+
+            previousCustomer = customer
+
+    print(f'Processed {line_count} lines.')
