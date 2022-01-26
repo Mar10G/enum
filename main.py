@@ -96,22 +96,22 @@ def doNmapParse():
     if os.path.isdir(dir) == True:
         print(f'\t ultimate-nmap-parser already exsist in /opt/tools')
     else:
-        myCMD('git clone https://github.com/Shifty0g/ultimate-nmap-parser/ /opt/tools/ultimate-nmap-parser')
-        myCMD('chmod +x /opt/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh')
+        myCMD('sudo git clone https://github.com/Shifty0g/ultimate-nmap-parser/ /opt/tools/ultimate-nmap-parser')
+        myCMD('sudo chmod +x /opt/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh')
 
     working_directory = base_directory + 'enum/nmap/'
     myCMD('sudo /opt/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh ' + working_directory + client + '.gnmap --all')
 
     cwd = os.getcwd()
     myCMD('sudo mv ' + cwd + '/parse/ ' + base_directory + 'enum/nmap/')
-    myCMD('chown ' + user + ' ' + base_directory + 'enum/nmap/parse/')
-    myCMD('chown ' + user + ' ' + base_directory + 'enum/nmap/parse/*.*')
+    myCMD('sudo chown ' + user + ' ' + base_directory + 'enum/nmap/parse/')
+    myCMD('sudo chown ' + user + ' ' + base_directory + 'enum/nmap/parse/*.*')
 
     print(f'\t End nmap parse')
     print(f'\t =======================================')
 
 
-client = 'Internal'
+client = 'Home'
 nmap_switches = '-sSVC -Pn -O  --top-ports 10  -v -T3'
 working_directory = ' '
 scan_directory = 'port-scan'
@@ -121,7 +121,8 @@ IP = ' '
 mask = 32
 CIDR = ' '
 previousCustomer = ' '
-user = os.getlogin()
+# user = os.getlogin()
+user = getpass.getuser()
 year = date.today().year
 base_directory = '/home/' + user + '/client-data/' + str(year) + '/' + client + '/'
 ip_file = base_directory + 'ips.txt'
