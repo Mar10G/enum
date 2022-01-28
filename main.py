@@ -4,6 +4,8 @@ import grp
 import os
 import pwd
 from datetime import date
+import subprocess
+
 
 
 class bcolors:
@@ -22,28 +24,22 @@ class bcolors:
 
 
 def myCMD(cmd):
-    print(f'\t ')
-    print(f"{bcolors.OK}About to run {cmd}")
+    print(f"{bcolors.Purple}About to run{bcolors.RESET} {cmd}", end='')
     os.system(cmd)
-    print(f"End of cmd {bcolors.RESET}")
-    print(f'\t ')
+    print(f"----> {bcolors.Purple} command complete {bcolors.RESET}")
 
 
 def createDirectory(myDir):
-   # print(f'\t =======================================')
-    print(f'Checking ' + myDir + ' ------> ' + bcolors.Green, end='')
+    print(f'Checking ' + myDir + ' ------> ', end='')
 
     if os.path.isdir(myDir):
-        print(f'Directory already exist')
+        print(bcolors.Green + 'Directory already exist' + bcolors.RESET)
     else:
         os.mkdir(myDir)
         uid = pwd.getpwnam(user).pw_uid
         gid = grp.getgrnam(user).gr_gid
         os.chown(myDir, uid, gid)
-        print(f'Directory created')
-
-    print(bcolors.RESET)
-    # print(f'\t =======================================')
+        print(bcolors.Blue + 'Directory created' + bcolors.RESET)
 
 
 def checkIPs(fl):
@@ -66,18 +62,35 @@ def checkIPs(fl):
 
 
 def doNmapScan():
-    print(f'\t =======================================')
-    print(f'\t Start nmap scan')
+    nmap_base_directory = base_directory + 'port-scan/'
+    nmap_phase1_switches = ' -sS -p 80,139,443,445 -T4 '
+    nmap_phase2_switches = ' -sS -v -O '
+    nmap_phase3_switches = ' -sS -Pn -p 0-65535 nmap --stats-every 5s '
 
-    working_directory = base_directory + 'enum/nmap/'
-    createDirectory(working_directory)
-    # nmap_command = 'sudo nmap -iL ' + ip_file + ' -sSVC -Pn -O -p- -v -T3 -oA ' + working_directory + client
-    nmap_command = 'sudo nmap -iL ' + ip_file + ' -sS -p 80,139,443,445 -T4 -oA ' + working_directory + client
-    print(f'\t nmap_command = ' + nmap_command)
-    os.system(nmap_command)
+    print(bcolors.Purple + 'Start nmap scan' + bcolors.RESET)
+    print(my_line)
 
-    print(f'\t End nmap scan')
-    print(f'\t =======================================')
+    createDirectory(nmap_base_directory)
+
+    createDirectory(nmap_base_directory + 'nmap-phase1')
+    nmap_command = 'sudo nmap -iL ' + ip_file + ' ' + nmap_phase1_switches + ' -oA ' + working_directory + client + ' > nmap_phase1.txt'
+    myCMD(nmap_command)
+
+    createDirectory(nmap_base_directory + 'nmap-phase2')
+    nmap_command = 'sudo nmap -iL ' + ip_file + ' ' + nmap_phase2_switches + ' -oA ' + working_directory + client + ' > nmap_phase2.txt'
+    myCMD(nmap_command)
+
+    subprocess.call('python full_path\file_name.py', creationflags=subprocess.CREATE_NEW_CONSOLE)
+
+    createDirectory(nmap_base_directory + 'nmap-phase3')
+    nmap_command = 'sudo nmap -iL ' + ip_file + ' ' + nmap_phase3_switches + ' -oA ' + working_directory + client + ' > nmap_phase3.txt'
+    myCMD(nmap_command)
+
+    # print(f'\t nmap_command = ' + nmap_command)
+    # os.system(nmap_command)
+
+    print(f'End nmap scan')
+    print(my_line)
 
 
 def doEyewitness():
@@ -123,11 +136,11 @@ client = 'Home'
 nmap_switches = '-sSVC -Pn -O  --top-ports 10  -v -T3'
 working_directory = ' '
 scan_directory = 'port-scan'
-nmap_command = ' '
 user = getpass.getuser()
 year = date.today().year
 base_directory = '/home/' + user + '/client-data/' + str(year) + '/' + client + '/'
 ip_file = base_directory + 'ips.txt'
+my_line = '==========================================================='
 
 # print(f'\t Checking ' + user)
 # print(f'\t Checking ' + os.getlogin() )
@@ -137,8 +150,8 @@ print(f'\t ')
 
 createDirectory(base_directory)
 checkIPs(ip_file)
-
 createDirectory(base_directory + 'enum/')
+createDirectory('temp/')
 
 doNmapScan()
 
