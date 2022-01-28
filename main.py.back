@@ -11,14 +11,6 @@ class bcolors:
     WARNING = '\033[93m'  # YELLOW
     FAIL = '\033[91m'  # RED
     RESET = '\033[0m'  # RESET COLOR
-    Black = '\033[0;30m'  # Black
-    Red = '\033[0;31m'  # Red
-    Green = '\033[0;32m'  # Green
-    Yellow = '\033[0;33m'  # Yellow
-    Blue = '\033[0;34m'  # Blue
-    Purple = '\033[0;35m'  # Purple
-    Cyan = '\033[0;36m'  # Cyan
-    White = '\033[0;37m'  # White
 
 
 def myCMD(cmd):
@@ -30,29 +22,29 @@ def myCMD(cmd):
 
 
 def createDirectory(myDir):
-   # print(f'\t =======================================')
-    print(f'Checking ' + myDir + ' ------> ' + bcolors.Green, end='')
+    print(f'\t =======================================')
+    print(f'\t Checking ' + myDir)
 
     if os.path.isdir(myDir):
-        print(f'Directory already exist')
+        print(f'\t Directory already exist')
     else:
         os.mkdir(myDir)
         uid = pwd.getpwnam(user).pw_uid
         gid = grp.getgrnam(user).gr_gid
         os.chown(myDir, uid, gid)
-        print(f'Directory created')
+        print(f'\t Directory created')
 
-    print(bcolors.RESET)
-    # print(f'\t =======================================')
+    print(f'\t =======================================')
 
 
 def checkIPs(fl):
-    print(f'Checking ' + fl + ' ------> ' + bcolors.Green, end='')
+    print(f'\t =======================================')
+    print(f'\t Checking ' + fl)
 
     if os.path.isfile(fl):
-        print(f'IP file exist', end='')
+        print(f'\t IP file exist')
         count = len(open(fl).readlines())
-        print(f'   ' + bcolors.Blue + 'lines = ' + str(count))
+        print(f'\t lines = ' + str(count))
     else:
         # os.mkdir(dir)
         print(f'\t not there')
@@ -62,7 +54,7 @@ def checkIPs(fl):
         os.chown(fl, uid, gid)
         quit()
 
-    print(bcolors.RESET)
+    print(f'\t =======================================')
 
 
 def doNmapScan():
@@ -124,6 +116,12 @@ nmap_switches = '-sSVC -Pn -O  --top-ports 10  -v -T3'
 working_directory = ' '
 scan_directory = 'port-scan'
 nmap_command = ' '
+customer = ' '
+IP = ' '
+mask = 32
+CIDR = ' '
+previousCustomer = ' '
+# user = os.getlogin()
 user = getpass.getuser()
 year = date.today().year
 base_directory = '/home/' + user + '/client-data/' + str(year) + '/' + client + '/'
@@ -132,8 +130,6 @@ ip_file = base_directory + 'ips.txt'
 # print(f'\t Checking ' + user)
 # print(f'\t Checking ' + os.getlogin() )
 # print(f'\t --- ' + base_directory)
-
-print(f'\t ')
 
 createDirectory(base_directory)
 checkIPs(ip_file)
@@ -151,4 +147,39 @@ doNmapParse()
 
 quit()
 
+with open('pentest.csv') as csv_file:
+    csv_reader = csv.reader(csv_file, delimiter=',')
+    line_count = 0
+    for row in csv_reader:
+        if line_count == 0:
+            print(f'Column names are {", ".join(row)}')
+            line_count += 1
+        else:
+            customer = row[0]
+            IP = row[1]
+            mask = row[2]
+            CIDR = IP + '/' + mask
+            working_directory = base_directory + customer
 
+            print(f"\n")
+            print(f"{bcolors.OK}Starting {customer} {IP} {bcolors.RESET}")
+            print(f"\t Working_directory = {working_directory}")
+
+            createDirectory(working_directory)
+            working_directory = working_directory + '/' + scan_directory
+            createDirectory(working_directory)
+
+            nmap_command = 'sudo nmap ' + CIDR + ' ' + nmap_switches + ' -oA ' + working_directory + '/' + row[1]
+            print(f"\t\t nmap_command = {nmap_command}")
+            os.system(nmap_command)
+            line_count += 1
+            print(f"{bcolors.OK}Ending {customer} {IP} {bcolors.RESET}")
+
+            if customer != previousCustomer:
+                print(f"{bcolors.OK}End of {customer} {IP} {bcolors.RESET}")
+                parse_command = 'sudo /home/kali/tools/ultimate-nmap-parser/ultimate-nmap-parser.sh ' + working_directory + '/*.gnmap --csv'
+                os.system(parse_command)
+
+            previousCustomer = customer
+
+    print(f'Processed {line_count} lines.')
